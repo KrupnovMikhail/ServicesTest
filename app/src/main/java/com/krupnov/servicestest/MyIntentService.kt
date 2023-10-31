@@ -18,13 +18,13 @@ class MyIntentService: IntentService(NAME) {
     override fun onCreate() {
         super.onCreate()
         log("onCreate")
+        setIntentRedelivery(false)
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
     }
 
     override fun onHandleIntent(intent: Intent?) {
         log("onHandleIntent")
-        setIntentRedelivery(false)
         for (i in 0 until 5) {
             Thread.sleep(1000)
             log("Timer $i")
