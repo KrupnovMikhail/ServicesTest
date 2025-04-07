@@ -6,13 +6,14 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 
-class MyForegroundService: Service() {
+class MyForegroundService : Service() {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
@@ -24,6 +25,8 @@ class MyForegroundService: Service() {
         createNotificationBuilder()
     }
 
+    var onProgressChanged: ((Int) -> Unit)? = null
+
     override fun onCreate() {
         super.onCreate()
         log("onCreate")
@@ -34,12 +37,13 @@ class MyForegroundService: Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         log("onStartCommand")
         coroutineScope.launch {
-            for (i in 0 .. 100 step 5) {
+            for (i in 0..100 step 5) {
                 delay(1000)
                 val notification = notificationBuilder
                     .setProgress(100, i, false)
                     .build()
                 notificationManager.notify(NOTIFICATION_ID, notification)
+                onProgressChanged?.invoke(i)
                 log("Timer $i")
             }
             stopSelf()
@@ -53,8 +57,9 @@ class MyForegroundService: Service() {
         log("onDestroy")
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        TODO("Not yet implemented")
+    override fun onBind(intent: Intent?): IBinder {
+        log("onBind")
+        return LocalBinder()
     }
 
     private fun log(message: String) {
@@ -73,11 +78,17 @@ class MyForegroundService: Service() {
     }
 
     private fun createNotificationBuilder() = NotificationCompat.Builder(this, CHANNEL_ID)
-         .setContentTitle("Title")
-         .setContentText("Text")
-         .setSmallIcon(R.drawable.ic_launcher_background)
-         .setProgress(100, 0, false)
-         .setOnlyAlertOnce(true)
+        .setContentTitle("Title")
+        .setContentText("Text")
+        .setSmallIcon(R.drawable.ic_launcher_background)
+        .setProgress(100, 0, false)
+        .setOnlyAlertOnce(true)
+
+    inner class LocalBinder : Binder() {
+
+        fun getService() = this@MyForegroundService
+    }
+
     companion object {
 
         private const val CHANNEL_ID = "channel_id"
